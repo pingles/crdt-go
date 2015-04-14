@@ -1,19 +1,19 @@
 package crdt
 
 type Counter struct {
-	processIdentity string
+	Process string
 
-	incValues map[string]int64
-	decValues map[string]int64
+	IncAtoms map[string]int64
+	DecAtoms map[string]int64
 }
 
 // retrieves the current value of the distributed counter
 func (c *Counter) Value() int64 {
 	x := int64(0)
-	for _, value := range c.incValues {
+	for _, value := range c.IncAtoms {
 		x = x + value
 	}
-	for _, value := range c.decValues {
+	for _, value := range c.DecAtoms {
 		x = x - value
 	}
 	return x
@@ -22,31 +22,31 @@ func (c *Counter) Value() int64 {
 // called when we want to merge our counter with the state of the same
 // counter from another node.
 func (c *Counter) Merge(other *Counter) {
-	for key, value := range other.incValues {
-		ourValue := c.incValues[key]
+	for key, value := range other.IncAtoms {
+		ourValue := c.IncAtoms[key]
 		if value > ourValue {
-			c.incValues[key] = value
+			c.IncAtoms[key] = value
 		}
 	}
 
-	for key, value := range other.decValues {
-		ourValue := c.decValues[key]
+	for key, value := range other.DecAtoms {
+		ourValue := c.DecAtoms[key]
 		if value > ourValue {
-			c.decValues[key] = value
+			c.DecAtoms[key] = value
 		}
 	}
 }
 
 func (c *Counter) Increment() {
-	c.incValues[c.processIdentity] += 1
+	c.IncAtoms[c.Process] += 1
 }
 
 func (c *Counter) Decrement() {
-	c.decValues[c.processIdentity] += 1
+	c.DecAtoms[c.Process] += 1
 }
 
 // creates a new counter, each node that has a replica of the counter
 // state must have a unique identity
-func NewCounter(processIdentity string) *Counter {
-	return &Counter{processIdentity, make(map[string]int64), make(map[string]int64)}
+func NewCounter(Process string) *Counter {
+	return &Counter{Process, make(map[string]int64), make(map[string]int64)}
 }
