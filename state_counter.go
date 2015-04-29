@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-type Counter struct {
+type StateCounter struct {
 	Process string
 
 	IncAtoms map[string]int64
@@ -14,7 +14,7 @@ type Counter struct {
 }
 
 // retrieves the current value of the distributed counter
-func (c *Counter) Value() int64 {
+func (c *StateCounter) Value() int64 {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -30,7 +30,7 @@ func (c *Counter) Value() int64 {
 
 // called when we want to merge our counter with the state of the same
 // counter from another node.
-func (c *Counter) Merge(other *Counter) {
+func (c *StateCounter) Merge(other *StateCounter) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -49,14 +49,14 @@ func (c *Counter) Merge(other *Counter) {
 	}
 }
 
-func (c *Counter) Increment() {
+func (c *StateCounter) Increment() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	c.IncAtoms[c.Process] += 1
 }
 
-func (c *Counter) Decrement() {
+func (c *StateCounter) Decrement() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -65,8 +65,8 @@ func (c *Counter) Decrement() {
 
 // creates a new counter, each node that has a replica of the counter
 // state must have a unique identity
-func NewCounter(process string) *Counter {
-	return &Counter{
+func NewStateCounter(process string) *StateCounter {
+	return &StateCounter{
 		Process:  process,
 		IncAtoms: make(map[string]int64),
 		DecAtoms: make(map[string]int64),

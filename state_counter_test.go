@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestCounterIncrement(t *testing.T) {
-	c := NewCounter("node1")
+func TestStateCounterIncrement(t *testing.T) {
+	c := NewStateCounter("node1")
 	if c.Value() != 0 {
 		t.Error("should have 0 state, was", c.Value())
 	}
@@ -15,8 +15,8 @@ func TestCounterIncrement(t *testing.T) {
 	}
 }
 
-func TestCounterDecrement(t *testing.T) {
-	c1 := NewCounter("node1")
+func TestStateCounterDecrement(t *testing.T) {
+	c1 := NewStateCounter("node1")
 	c1.Increment()
 	c1.Decrement()
 
@@ -24,7 +24,7 @@ func TestCounterDecrement(t *testing.T) {
 		t.Error("should have 0 value, was", c1.Value())
 	}
 
-	c2 := NewCounter("node2")
+	c2 := NewStateCounter("node2")
 	c2.Increment()
 	c2.Increment()
 	c2.Decrement()
@@ -35,9 +35,9 @@ func TestCounterDecrement(t *testing.T) {
 	}
 }
 
-func TestCounterMerge(t *testing.T) {
-	c1 := NewCounter("node1")
-	c2 := NewCounter("node2")
+func TestStateCounterMerge(t *testing.T) {
+	c1 := NewStateCounter("node1")
+	c2 := NewStateCounter("node2")
 
 	c1.Increment()
 	c2.Increment()
