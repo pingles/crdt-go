@@ -25,8 +25,9 @@ func TestOpCounterReplica(t *testing.T) {
   c1 := NewOpCounter("node1")
   c2 := NewOpCounter("node2")
   
-  c1.AddReplica(c2)
-  c2.AddReplica(c1)
+  c1chan := make(chan CounterOperation)
+  c1.AddReplica(c1chan)
+  c2.Listen(c1chan)
   
   c1.Increment()
   if c2.Value() != 1 {

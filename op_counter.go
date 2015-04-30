@@ -4,46 +4,74 @@ type OpCounter struct {
   processIdentity string
   value           int64
   
-  remoteReplicas  []*OpCounter
+  remoteReplicas  []chan<- CounterOperation
+}
+
+type CounterOperation interface {
+  Perform(*OpCounter)
+}
+type IncrementOperation struct {
+  value int64
+}
+type DecrementOperation struct {
+  value int64
+}
+func IncrementByOne() *IncrementOperation {
+  return &IncrementOperation{1}
+}
+func (op *IncrementOperation) Perform(counter *OpCounter) {
+  counter.inc(op.value)
+}
+func (c *OpCounter) inc(x int64) {
+  c.value += x
+}
+
+func (op *DecrementOperation) Perform(counter *OpCounter) {
+  counter.dec(op.value)
+}
+
+func DecrementByOne() *DecrementOperation {
+  return &DecrementOperation{1}
+}
+func (c *OpCounter) dec(x int64) {
+  c.value -= x
 }
 
 func NewOpCounter(processIdentity string) *OpCounter {
-  return &OpCounter{processIdentity: processIdentity, remoteReplicas: make([]*OpCounter, 0)}
+  replicas := make([]chan<- CounterOperation, 0)
+  return &OpCounter{processIdentity: processIdentity, remoteReplicas: replicas}
 }
 
 func (c *OpCounter) Value() int64 {
   return c.value
 }
 
-func (c *OpCounter) downstreamIncrement() {
-  c.value += 1
-}
-
-func (c *OpCounter) downstreamDecrement() {
-  c.value -= 1
-}
-
-func (c *OpCounter) replicas() []*OpCounter {
-  allReplicas := make([]*OpCounter, len(c.remoteReplicas) + 1)
-  allReplicas[0] = c
-  for idx, r := range c.remoteReplicas {
-    allReplicas[idx+1] = r
-  }
-  return allReplicas
-}
-
 func (c *OpCounter) Increment() {
-  for _, r := range c.replicas() {
-    r.downstreamIncrement()
+  op := IncrementByOne()
+  op.Perform(c)
+  c.replicate(op)
+}
+
+func (c *OpCounter) replicate(op CounterOperation) {
+  for _, replica := range c.remoteReplicas {
+    replica <- op
   }
 }
 
 func (c *OpCounter) Decrement() {
-  for _, r := range c.replicas() {
-    r.downstreamDecrement()
-  }
+  op := DecrementByOne()
+  op.Perform(c)
+  c.replicate(op)
 }
 
-func (local *OpCounter) AddReplica(remote *OpCounter) {
-  local.remoteReplicas = append(local.remoteReplicas, remote)
+func (c *OpCounter) Listen(operations <-chan CounterOperation) {
+  go func() {
+    for op := range operations {
+      op.Perform(c)
+    }
+  }()
+}
+
+func (c *OpCounter) AddReplica(replica chan<- CounterOperation) {
+  c.remoteReplicas = append(c.remoteReplicas, replica)
 }
