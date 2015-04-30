@@ -52,16 +52,16 @@ func (c *OpCounter) Increment() {
   c.replicate(op)
 }
 
-func (c *OpCounter) replicate(op CounterOperation) {
-  for _, replica := range c.remoteReplicas {
-    replica <- op
-  }
-}
-
 func (c *OpCounter) Decrement() {
   op := DecrementByOne()
   op.Perform(c)
   c.replicate(op)
+}
+
+func (c *OpCounter) replicate(op CounterOperation) {
+  for _, replica := range c.remoteReplicas {
+    replica <- op
+  }
 }
 
 func (c *OpCounter) Listen(operations <-chan CounterOperation) {
